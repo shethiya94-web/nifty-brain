@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nifty Trading Brain</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a24;
+    --border: #2a2a3a;
+    --border2: #3a3a4a;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --text3: #5a5a72;
+    --green: #00d68f;
+    --green2: #00a86b;
+    --green-bg: rgba(0,214,143,0.08);
+    --red: #ff4d6d;
+    --red2: #cc3a55;
+    --red-bg: rgba(255,77,109,0.08);
+    --amber: #ffb020;
+    --amber-bg: rgba(255,176,32,0.08);
+    --blue: #4d9fff;
+    --blue-bg: rgba(77,159,255,0.08);
+    --accent: #7c6af7;
+    --accent2: #5a4fd4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .logo-text { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-sub { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .header-nav { display: flex; gap: 8px; }
+  .nav-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover { border-color: var(--border2); color: var(--text); background: var(--bg2); }
+  .nav-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+  /* Tabs */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Upload Section */
+  .upload-area {
+    border: 2px dashed var(--border2);
+    border-radius: 16px;
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: var(--bg2);
+    position: relative;
+    overflow: hidden;
+  }
+  .upload-area::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(124,106,247,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .upload-area:hover, .upload-area.dragover {
+    border-color: var(--accent);
+    background: var(--bg3);
+  }
+  .upload-icon { font-size: 48px; margin-bottom: 16px; }
+  .upload-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+  .upload-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .upload-input { display: none; }
+
+  .upload-btn {
+    margin-top: 20px;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-btn:hover { background: var(--accent2); transform: translateY(-1px); }
+
+  /* Preview */
+  .preview-section { display: none; margin-top: 20px; }
+  .preview-section.show { display: block; }
+  .preview-img {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    max-height: 300px;
+    object-fit: contain;
+    background: var(--bg2);
+  }
+
+  /* Cost indicator */
+  .cost-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    padding: 6px 14px;
+    background: var(--amber-bg);
+    border: 1px solid var(--amber);
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--amber);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Analyse button */
+  .analyse-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .analyse-btn.show { display: block; }
+  .analyse-btn:hover { background: var(--green2); transform: translateY(-1px); }
+  .analyse-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Loading */
+  .loading { display: none; text-align: center; padding: 40px; }
+  .loading.show { display: block; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+  .loading-steps { margin-top: 12px; font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+  /* Result */
+  .result-section { display: none; margin-top: 24px; }
+  .result-section.show { display: block; }
+
+  .verdict-card {
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+    border: 2px solid;
+    position: relative;
+    overflow: hidden;
+  }
+  .verdict-card.buy { background: var(--green-bg); border-color: var(--green); }
+  .verdict-card.sell { background: var(--red-bg); border-color: var(--red); }
+  .verdict-card.notrade { background: var(--amber-bg); border-color: var(--amber); }
+
+  .verdict-label {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.7;
+  }
+  .verdict-main { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+  .verdict-card.buy .verdict-main { color: var(--green); }
+  .verdict-card.sell .verdict-main { color: var(--red); }
+  .verdict-card.notrade .verdict-main { color: var(--amber); }
+  .verdict-grade { font-size: 13px; color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+
+  /* Trade levels */
+  .levels-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  @media (min-width: 600px) {
+    .levels-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+  .level-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .level-label { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+  .level-value { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .level-card.entry .level-value { color: var(--blue); }
+  .level-card.sl .level-value { color: var(--red); }
+  .level-card.t1 .level-value { color: var(--green); }
+  .level-card.t2 .level-value { color: var(--green); }
+  .level-sub { font-size: 10px; color: var(--text3); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+  /* Lots */
+  .lots-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .lots-info { }
+  .lots-label { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .lots-value { font-size: 32px; font-weight: 800; color: var(--accent); }
+  .lots-detail { font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+  .risk-info { text-align: right; }
+  .risk-label { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-bottom: 4px; }
+  .risk-value { font-size: 20px; font-weight: 700; color: var(--amber); }
+
+  /* Analysis text */
+  .analysis-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .analysis-title { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .analysis-text { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+  /* Checklist */
+  .checklist { display: grid; gap: 6px; }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .check-item.pass { background: var(--green-bg); color: var(--green); }
+  .check-item.fail { background: var(--red-bg); color: var(--red); }
+  .check-item.warn { background: var(--amber-bg); color: var(--amber); }
+  .check-icon { font-size: 14px; flex-shrink: 0; }
+
+  /* Reset button */
+  .reset-btn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    border-radius: 12px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+  .reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Rules editor */
+  .rules-section { }
+  .rules-header { margin-bottom: 20px; }
+  .rules-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .rules-sub { font-size: 13px; color: var(--text2); }
+  .rules-editor {
+    width: 100%;
+    min-height: 500px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 20px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .rules-editor:focus { border-color: var(--accent); }
+  .save-btn {
+    margin-top: 12px;
+    padding: 12px 28px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .save-btn:hover { background: var(--accent2); }
+  .saved-msg { display: none; margin-left: 12px; color: var(--green); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .saved-msg.show { display: inline; }
+
+  /* API Key section */
+  .api-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .api-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .api-sub { font-size: 12px; color: var(--text2); margin-bottom: 12px; line-height: 1.6; }
+  .api-input-row { display: flex; gap: 10px; }
+  .api-input {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .api-input:focus { border-color: var(--accent); }
+  .api-save-btn {
+    padding: 10px 20px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .api-status { margin-top: 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+  .api-status.ok { color: var(--green); }
+  .api-status.err { color: var(--red); }
+
+  /* Error */
+  .error-card {
+    background: var(--red-bg);
+    border: 1px solid var(--red);
+    border-radius: 12px;
+    padding: 16px;
+    color: var(--red);
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .error-card.show { display: block; }
+
+  /* History */
+  .history-list { display: grid; gap: 10px; }
+  .history-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+  }
+  .history-verdict { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .history-verdict.buy { color: var(--green); }
+  .history-verdict.sell { color: var(--red); }
+  .history-verdict.notrade { color: var(--amber); }
+  .history-time { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+  .history-empty { text-align: center; padding: 40px; color: var(--text3); font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+
+  .section-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">📈</div>
+      <div>
+        <div class="logo-text">Trading Brain</div>
+        <div class="logo-sub">NIFTY 50 SMA STRATEGY</div>
+      </div>
+    </div>
+    <div class="header-nav">
+      <button class="nav-btn active" onclick="switchTab('analyse', this)">Analyse</button>
+      <button class="nav-btn" onclick="switchTab('rules', this)">Rules</button>
+      <button class="nav-btn" onclick="switchTab('history', this)">History</button>
+    </div>
+  </div>
+
+  <!-- ANALYSE TAB -->
+  <div class="tab-content active" id="tab-analyse">
+
+    <!-- API Key -->
+    <div class="api-section">
+      <div class="api-title">🔑 Anthropic API Key</div>
+      <div class="api-sub">Enter your API key once — it saves in your browser. Get it free from console.anthropic.com → API Keys. You only pay per scan (approx ₹3–6 each).</div>
+      <div class="api-input-row">
+        <input type="password" class="api-input" id="apiKeyInput" placeholder="sk-ant-api03-..." />
+        <button class="api-save-btn" onclick="saveApiKey()">Save Key</button>
+      </div>
+      <div class="api-status" id="apiStatus"></div>
+    </div>
+
+    <!-- Upload -->
+    <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <div class="upload-icon">📊</div>
+      <div class="upload-title">Upload Chart Screenshot</div>
+      <div class="upload-sub">Drop your Nifty 5-min chart here<br>Make sure 50 SMA is visible on the chart</div>
+      <button class="upload-btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Choose Screenshot</button>
+      <input type="file" class="upload-input" id="fileInput" accept="image/*" onchange="handleFile(event)">
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-section" id="previewSection">
+      <img id="previewImg" class="preview-img" src="" alt="Chart preview">
+      <div style="text-align:center">
+        <div class="cost-badge">💰 Estimated cost: ₹3–6 for this scan</div>
+      </div>
+      <button class="analyse-btn show" id="analyseBtn" onclick="analyseChart()">🔍 Analyse This Chart</button>
+    </div>
+
+    <!-- Error -->
+    <div class="error-card" id="errorCard"></div>
+
+    <!-- Loading -->
+    <div class="loading" id="loadingSection">
+      <div class="spinner"></div>
+      <div class="loading-text">Analysing your chart...</div>
+      <div class="loading-steps" id="loadingSteps">Running 12-step checklist</div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-section" id="resultSection">
+      <div id="verdictCard" class="verdict-card notrade">
+        <div class="verdict-label">Verdict</div>
+        <div class="verdict-main" id="verdictMain">—</div>
+        <div class="verdict-grade" id="verdictGrade">—</div>
+      </div>
+
+      <div class="levels-grid" id="levelsGrid" style="display:none">
+        <div class="level-card entry">
+          <div class="level-label">Entry</div>
+          <div class="level-value" id="lvEntry">—</div>
+          <div class="level-sub">1 pt above candle high</div>
+        </div>
+        <div class="level-card sl">
+          <div class="level-label">Stop Loss</div>
+          <div class="level-value" id="lvSL">—</div>
+          <div class="level-sub" id="lvSLpts">— pts</div>
+        </div>
+        <div class="level-card t1">
+          <div class="level-label">Target 1:2</div>
+          <div class="level-value" id="lvT1">—</div>
+          <div class="level-sub">Default target</div>
+        </div>
+        <div class="level-card t2">
+          <div class="level-label">Target 1:3</div>
+          <div class="level-value" id="lvT2">—</div>
+          <div class="level-sub">If 1:2 in 6 candles</div>
+        </div>
+      </div>
+
+      <div class="lots-card" id="lotsCard" style="display:none">
+        <div class="lots-info">
+          <div class="lots-label">Lots to Buy</div>
+          <div class="lots-value" id="lotsValue">—</div>
+          <div class="lots-detail" id="lotsDetail">—</div>
+        </div>
+        <div class="risk-info">
+          <div class="risk-label">Risk Amount</div>
+          <div class="risk-value" id="riskValue">₹25,000</div>
+        </div>
+      </div>
+
+      <div class="analysis-card">
+        <div class="analysis-title">Checklist Analysis</div>
+        <div class="checklist" id="checklistDiv"></div>
+      </div>
+
+      <div class="analysis-card">
+        <div class="analysis-title">Full Analysis</div>
+        <div class="analysis-text" id="analysisText">—</div>
+      </div>
+
+      <button class="reset-btn" onclick="resetApp()">↩ Analyse Another Chart</button>
+    </div>
+
+  </div>
+
+  <!-- RULES TAB -->
+  <div class="tab-content" id="tab-rules">
+    <div class="rules-header">
+      <div class="rules-title">Trading Rule Document</div>
+      <div class="rules-sub">Edit your rules here. Click Save — updates immediately for all future scans.</div>
+    </div>
+    <textarea class="rules-editor" id="rulesEditor"></textarea>
+    <div style="display:flex; align-items:center; margin-top:12px">
+      <button class="save-btn" onclick="saveRules()">💾 Save Rules</button>
+      <span class="saved-msg" id="savedMsg">✓ Saved successfully</span>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="tab-content" id="tab-history">
+    <div class="section-label">Recent Scans</div>
+    <div class="history-list" id="historyList">
+      <div class="history-empty">No scans yet. Upload a chart to get started.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── DEFAULT RULES ──────────────────────────────────────────────────────────
+const DEFAULT_RULES = `NIFTY 50 SMA OPTIONS STRATEGY — MASTER RULE DOCUMENT
+Version 1.2 | April 2026
+
+INSTRUMENT & SESSION
+- Index: Nifty 50, 5-minute candles, 50-period SMA
+- BUY signal → Buy ATM CALL option
+- SELL signal → Buy ATM PUT option
+- Session: 9:15 AM to 2:15 PM (no trades after 14:15)
+- Multiple trades per day allowed
+
+CAPITAL & RISK
+- Total capital: Rs 25,00,000
+- Risk per trade Grade A/B: Rs 25,000 (1%)
+- Risk per trade Grade C: Rs 12,500 (0.5%)
+- Lot size: 65 quantity per lot
+- Delta: 0.5 (ATM option)
+- Lots formula: Rs 25,000 / (SL points x 0.5 x 65)
+- SL > 70 pts: auto Grade C (half size, 1:1 target only)
+- SL > 100 pts: SKIP trade entirely
+
+LOT SIZE TABLE
+10pts=70lots | 15pts=46lots | 20pts=34lots | 25pts=27lots
+30pts=22lots | 35pts=19lots | 40pts=17lots | 45pts=15lots
+50pts=13lots | 55pts=12lots | 60pts=11lots | 65pts=10lots
+70pts=9lots  | 80pts=8lots  | 90pts=7lots  | 100pts=6lots
+For Grade C: take exactly half the lots above
+
+BUY SETUP RULES (all must be true)
+1. Price must come FROM ABOVE the 50 SMA
+2. Clear visible swing — price was higher, pulled back to MA (NOT a sideways grind to MA)
+3. GREEN candle at or near MA
+4. Candle CLOSE must be ABOVE MA (wick below OK)
+5. MA must be RISING for minimum 3 candles
+6. 2-candle rule: no 2 consecutive closes BELOW MA before setup candle
+Entry: above HIGH of green candle + 1 point
+SL: LOWEST of (setup candle low, previous candle low) minus 1 point
+
+SELL SETUP RULES (all must be true)
+1. Price must come FROM BELOW the 50 SMA
+2. Clear visible swing — price was lower, bounced up to MA (NOT a sideways grind)
+3. RED candle at or near MA
+4. Candle CLOSE must be BELOW MA (wick above OK)
+5. MA must be DECLINING for minimum 3 candles
+6. 2-candle rule: no 2 consecutive closes ABOVE MA before setup candle
+Entry: below LOW of red candle minus 1 point
+SL: HIGHEST of (setup candle high, previous candle high) plus 1 point
+
+EXIT RULES
+- Default target: 1:2 risk reward
+- If 1:2 reached within 6 candles: shift target to 1:3, trail SL to breakeven
+- Sideways exit: if price has NOT reached 1:1 within 10 candles — exit at market
+- SL hit: accept immediately, re-enter if new valid setup forms (full size)
+
+INVALIDATION FILTERS (skip if any apply)
+Filter 1: Wrong approach direction — price on wrong side before setup
+Filter 2: MA direction wrong — flat or wrong slope (need 3+ candles of slope)
+Filter 3: Choppy day — price crossed MA 3+ times in session — avoid all trades
+Filter 4: 2-candle rule violated — 2+ consecutive closes on wrong side
+Filter 5: After 14:15 — no new trades
+Filter 6: Long distance bounce — score these 3 questions:
+  Q1: Did price travel more than 150 pts from day low to MA? 
+  Q2: Did bounce take more than 2 hours?
+  Q3: Has MA flattened significantly?
+  Score 3 = SKIP | Score 2 = half size 1:1 only | Score 1 = normal size 1:1 only
+Filter 7: Sideways approach — price ground sideways to MA instead of clean swing
+
+SPECIAL PATTERNS
+Rolling-Over MA Sell: MA was rising, has peaked and started declining. Price above MA. First red candle closing below now-declining MA = valid sell (no bounce from below needed).
+Morning Star (buy exception): Large red candle + small doji/body + large green candle, all near MA = 2-candle rule override. Must be exactly this pattern — do not apply loosely.
+Evening Star (sell exception): Large green + small doji + large red, all near MA = 2-candle rule override.
+
+DAY TYPE CLASSIFICATION (decide by 9:45 AM)
+Type A (Trend): MA clearly sloping, trade with trend — best days
+Type B (Recovery): Gap/sharp open, MA changing direction — wait for setup to form  
+Type C (Choppy): MA flat, multiple crossings — avoid or very selective after 13:00
+Type D (Crash): Price far from MA all day — NO TRADE, protect capital
+
+MA CHASING PRICE TRAP
+If by 11:00 AM the MA is 100+ points below price and catching up — this is a no-trade day. Price will not pull back. Do not wait.
+
+FLAT MA IDENTIFICATION
+If MA has moved less than 20 points in first 6 candles (by 9:45) — classify as Type C immediately.
+
+SETUP QUALITY GRADING
+Grade A: MA sloping 5+ candles, single clean touch, strong candle body, setup 9:30-13:30, clear swing — full size, 1:2 shifting to 1:3
+Grade B: Most conditions met, minor issues — full size, standard 1:2
+Grade C: Long bounce filter 1-2, after 14:00, borderline MA, SL>70pts — half size, 1:1 only
+Invalid: Any filter triggered — no trade
+
+POST 14:00 RULE
+If setup forms between 14:00-14:15: entry must trigger within 1-2 candles or abandon. Do not wait past 14:12.
+
+REFERENCE GOLD STANDARDS
+Best buy: Mar 10 — Rising MA, single clean pullback, green candle
+Best sell: Mar 6 Setup 2 — Declining MA, bounce from below, red candle rejection
+Correctly avoided: Mar 6 Setup 1 — price already above MA, no swing from below
+Skip example: Mar 27/30 — long bounce filter all 3 YES, correctly skipped`;
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+let currentImageBase64 = null;
+let scanHistory = [];
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.onload = () => {
+  // Load saved rules
+  const savedRules = localStorage.getItem('tradingRules');
+  document.getElementById('rulesEditor').value = savedRules || DEFAULT_RULES;
+  
+  // Load API key display
+  const savedKey = localStorage.getItem('anthropicKey');
+  if (savedKey) {
+    document.getElementById('apiKeyInput').value = savedKey;
+    document.getElementById('apiStatus').textContent = '✓ API key saved';
+    document.getElementById('apiStatus').className = 'api-status ok';
+  }
+
+  // Load history
+  const savedHistory = localStorage.getItem('scanHistory');
+  if (savedHistory) {
+    scanHistory = JSON.parse(savedHistory);
+    renderHistory();
+  }
+};
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── API KEY ────────────────────────────────────────────────────────────────
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-ant')) {
+    document.getElementById('apiStatus').textContent = '✗ Invalid key format. Should start with sk-ant';
+    document.getElementById('apiStatus').className = 'api-status err';
+    return;
+  }
+  localStorage.setItem('anthropicKey', key);
+  document.getElementById('apiStatus').textContent = '✓ API key saved successfully';
+  document.getElementById('apiStatus').className = 'api-status ok';
+}
+
+// ── FILE HANDLING ──────────────────────────────────────────────────────────
+function handleFile(event) {
+  const file = event.target.files[0];
+  if (file) processFile(file);
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('uploadArea').classList.add('dragover');
+}
+
+function handleDragLeave(e) {
+  document.getElementById('uploadArea').classList.remove('dragover');
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadArea').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const result = e.target.result;
+    currentImageBase64 = result.split(',')[1];
+    document.getElementById('previewImg').src = result;
+    document.getElementById('previewSection').classList.add('show');
+    document.getElementById('resultSection').classList.remove('show');
+    document.getElementById('errorCard').classList.remove('show');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── ANALYSE ────────────────────────────────────────────────────────────────
+async function analyseChart() {
+  const apiKey = localStorage.getItem('anthropicKey');
+  if (!apiKey) {
+    showError('Please save your Anthropic API key first in the box above.');
+    return;
+  }
+  if (!currentImageBase64) {
+    showError('Please upload a chart screenshot first.');
+    return;
+  }
+
+  const rules = localStorage.getItem('tradingRules') || DEFAULT_RULES;
+
+  // Show loading
+  document.getElementById('loadingSection').classList.add('show');
+  document.getElementById('resultSection').classList.remove('show');
+  document.getElementById('errorCard').classList.remove('show');
+  document.getElementById('analyseBtn').disabled = true;
+
+  const steps = [
+    'Step 1/12: Checking time filter...',
+    'Step 2/12: Classifying day type...',
+    'Step 3/12: Checking MA angle...',
+    'Step 4/12: Checking approach direction...',
+    'Step 5/12: Checking swing quality...',
+    'Step 6/12: Running distance filter...',
+    'Step 7/12: Checking candle colour...',
+    'Step 8/12: Checking MA close...',
+    'Step 9/12: Checking 2-candle rule...',
+    'Step 10/12: Grading setup...',
+    'Step 11/12: Calculating lots...',
+    'Step 12/12: Finalising verdict...'
+  ];
+
+  let stepIdx = 0;
+  const stepInterval = setInterval(() => {
+    if (stepIdx < steps.length) {
+      document.getElementById('loadingSteps').textContent = steps[stepIdx++];
+    }
+  }, 800);
+
+  const prompt = `You are an expert Nifty 50 options trading analyst. Analyse the chart screenshot using ONLY these rules:
+
+${rules}
+
+CRITICAL INSTRUCTIONS:
+- The LAST candle on the EXTREME RIGHT of the chart is the setup candle in question
+- Check ALL 12 checklist items in order before giving verdict
+- Be very strict about the approach direction rule
+- Be very strict about the sideways approach filter
+- Run the distance filter (3 questions) before checking candle colour
+- Check if price is in sideways pattern approaching MA
+
+Respond in this EXACT JSON format (no other text, just JSON):
+{
+  "verdict": "BUY_CALL" or "BUY_PUT" or "NO_TRADE",
+  "grade": "A" or "B" or "C" or "INVALID",
+  "reason_short": "one line summary",
+  "day_type": "A" or "B" or "C" or "D",
+  "ma_direction": "Rising" or "Declining" or "Flat",
+  "entry": 0,
+  "sl": 0,
+  "sl_points": 0,
+  "target_1_2": 0,
+  "target_1_3": 0,
+  "lots": 0,
+  "risk_amount": 25000,
+  "checklist": [
+    {"step": "Time filter", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "Day type", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "MA angle (3+ candles)", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "Approach direction", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "Clean swing (not sideways)", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "Distance filter score", "result": "pass" or "fail" or "warn", "note": "score X/3"},
+    {"step": "Candle colour", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "Close on correct side of MA", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "2-candle rule", "result": "pass" or "fail" or "warn", "note": "brief note"},
+    {"step": "Setup grade", "result": "pass" or "fail" or "warn", "note": "A/B/C/Invalid"},
+    {"step": "SL size filter", "result": "pass" or "fail" or "warn", "note": "X pts"},
+    {"step": "Lots calculated", "result": "pass" or "fail" or "warn", "note": "X lots"}
+  ],
+  "full_analysis": "3-4 sentences explaining exactly what you see, why verdict is given, and any important warnings"
+}
+
+If NO_TRADE: set entry, sl, sl_points, target_1_2, target_1_3, lots to 0.
+For Grade C: risk_amount = 12500, lots = half of table value.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: 1500,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/png',
+                data: currentImageBase64
+              }
+            },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    clearInterval(stepInterval);
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'API error: ' + response.status);
+    }
+
+    const data = await response.json();
+    const rawText = data.content[0].text;
+    
+    // Parse JSON
+    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse response. Please try again.');
+    const result = JSON.parse(jsonMatch[0]);
+
+    // Save to history
+    const historyItem = {
+      time: new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}),
+      date: new Date().toLocaleDateString('en-IN'),
+      verdict: result.verdict,
+      grade: result.grade,
+      reason: result.reason_short
+    };
+    scanHistory.unshift(historyItem);
+    if (scanHistory.length > 20) scanHistory.pop();
+    localStorage.setItem('scanHistory', JSON.stringify(scanHistory));
+    renderHistory();
+
+    displayResult(result);
+
+  } catch (err) {
+    clearInterval(stepInterval);
+    showError('Error: ' + err.message);
+  } finally {
+    document.getElementById('loadingSection').classList.remove('show');
+    document.getElementById('analyseBtn').disabled = false;
+  }
+}
+
+// ── DISPLAY RESULT ─────────────────────────────────────────────────────────
+function displayResult(r) {
+  // Verdict card
+  const card = document.getElementById('verdictCard');
+  const verdictMain = document.getElementById('verdictMain');
+  const verdictGrade = document.getElementById('verdictGrade');
+
+  card.className = 'verdict-card';
+  if (r.verdict === 'BUY_CALL') {
+    card.classList.add('buy');
+    verdictMain.textContent = '✅ BUY CALL';
+  } else if (r.verdict === 'BUY_PUT') {
+    card.classList.add('sell');
+    verdictMain.textContent = '✅ BUY PUT';
+  } else {
+    card.classList.add('notrade');
+    verdictMain.textContent = '❌ NO TRADE';
+  }
+
+  verdictGrade.textContent = `Grade ${r.grade} | Day Type ${r.day_type} | MA ${r.ma_direction} | ${r.reason_short}`;
+
+  // Levels
+  if (r.verdict !== 'NO_TRADE' && r.entry > 0) {
+    document.getElementById('levelsGrid').style.display = 'grid';
+    document.getElementById('lotsCard').style.display = 'flex';
+    document.getElementById('lvEntry').textContent = r.entry.toFixed(2);
+    document.getElementById('lvSL').textContent = r.sl.toFixed(2);
+    document.getElementById('lvSLpts').textContent = r.sl_points + ' pts';
+    document.getElementById('lvT1').textContent = r.target_1_2.toFixed(2);
+    document.getElementById('lvT2').textContent = r.target_1_3.toFixed(2);
+    document.getElementById('lotsValue').textContent = r.lots;
+    document.getElementById('lotsDetail').textContent = `${r.lots} lots × 65 = ${r.lots * 65} qty`;
+    document.getElementById('riskValue').textContent = '₹' + r.risk_amount.toLocaleString('en-IN');
+  } else {
+    document.getElementById('levelsGrid').style.display = 'none';
+    document.getElementById('lotsCard').style.display = 'none';
+  }
+
+  // Checklist
+  const checkDiv = document.getElementById('checklistDiv');
+  checkDiv.innerHTML = '';
+  if (r.checklist) {
+    r.checklist.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'check-item ' + item.result;
+      const icon = item.result === 'pass' ? '✓' : item.result === 'fail' ? '✗' : '⚠';
+      div.innerHTML = `<span class="check-icon">${icon}</span><span>${item.step}: ${item.note}</span>`;
+      checkDiv.appendChild(div);
+    });
+  }
+
+  // Analysis
+  document.getElementById('analysisText').textContent = r.full_analysis;
+
+  document.getElementById('resultSection').classList.add('show');
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const card = document.getElementById('errorCard');
+  card.textContent = '⚠ ' + msg;
+  card.classList.add('show');
+  document.getElementById('loadingSection').classList.remove('show');
+}
+
+function resetApp() {
+  currentImageBase64 = null;
+  document.getElementById('previewSection').classList.remove('show');
+  document.getElementById('resultSection').classList.remove('show');
+  document.getElementById('errorCard').classList.remove('show');
+  document.getElementById('fileInput').value = '';
+  window.scrollTo(0, 0);
+}
+
+function saveRules() {
+  const rules = document.getElementById('rulesEditor').value;
+  localStorage.setItem('tradingRules', rules);
+  const msg = document.getElementById('savedMsg');
+  msg.classList.add('show');
+  setTimeout(() => msg.classList.remove('show'), 3000);
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  if (scanHistory.length === 0) {
+    list.innerHTML = '<div class="history-empty">No scans yet. Upload a chart to get started.</div>';
+    return;
+  }
+  list.innerHTML = scanHistory.map(item => {
+    const cls = item.verdict === 'BUY_CALL' ? 'buy' : item.verdict === 'BUY_PUT' ? 'sell' : 'notrade';
+    const label = item.verdict === 'BUY_CALL' ? 'BUY CALL' : item.verdict === 'BUY_PUT' ? 'BUY PUT' : 'NO TRADE';
+    return `<div class="history-item">
+      <div>
+        <div class="history-verdict ${cls}">${label} — Grade ${item.grade}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">${item.reason}</div>
+      </div>
+      <div class="history-time">${item.date}<br>${item.time}</div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
